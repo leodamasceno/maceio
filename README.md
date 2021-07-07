@@ -5,6 +5,7 @@ Golang application that listens for webhook events coming from Github, runs test
 # What does it do?
 It runs a list of tests defined in a YAML file, located in the application's repository. Maceio currently supports the following test types:
 - **Custom**
+- **Kubeval**
 - **Pytest**
 - **RSpec**
 - **Rake**
@@ -69,6 +70,14 @@ tests:
 tests:
   - name: "Pytest local"
     cmd: pytest
+```
+
+### Kubeval
+```
+---
+tests:
+  - name: "Kubernetes syntax"
+    cmd: kubeval deployment.yaml
 ```
 
 ### Custom
