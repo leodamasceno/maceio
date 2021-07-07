@@ -13,6 +13,9 @@ It runs a list of tests defined in a YAML file, located in the application's rep
 
 The custom type can run any command present on Alpine. For instance, this would be the right check if you need to run **gem** or **pip3**. For more information, check the *Dockerfile* in this repository.
 
+Your pull request will have the test output, check the image below:
+![test result](img/test_result.png)
+
 # Configuring your repository
 ### Add the configuration file
 Add the *maceio.yaml* file to your repository, the structure should look like the one below:
@@ -38,7 +41,7 @@ Add the *maceio.yaml* file to your repository, the structure should look like th
 - **Which events would you like to trigger this webhook:** Select *Pull requests* and *Pushes*
 
 ### Personal access tokens
-Follow [this](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token) guide and select the scopes *repo* and *admin:repo_hook*.
+Create a user and follow [this](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token) guide and select the scopes *repo* and *admin:repo_hook*. 
 
 
 # Configuration file
