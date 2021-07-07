@@ -22,6 +22,11 @@ RUN wget https://releases.hashicorp.com/terraform/0.12.21/terraform_0.12.21_linu
 RUN unzip terraform_0.12.21_linux_amd64.zip && rm terraform_0.12.21_linux_amd64.zip
 RUN mv terraform /usr/bin/terraform
 
+# Install Kubeval
+RUN wget https://github.com/instrumenta/kubeval/releases/download/v0.16.1/kubeval-linux-amd64.tar.gz
+RUN tar xf kubeval-linux-amd64.tar.gz && rm kubeval-linux-amd64.tar.gz
+RUN cp kubeval /usr/local/bin
+
 # Configure Go
 ENV GOROOT /usr/lib/go
 ENV GOPATH /go
