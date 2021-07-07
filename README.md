@@ -13,7 +13,8 @@ It runs a list of tests defined in a YAML file, located in the application's rep
 The custom type can run any command present on Alpine. For instance, this would be the right check if you need to run **gem** or **pip3**. For more information, check the *Dockerfile* in this repository.
 
 # Configuring your repository
-Add the *maceio.yaml* file to the application repository. The directory hierarchy should look like this:
+### Add the configuration file
+Add the *maceio.yaml* file to your repository, the structure should look like the one below:
 ```
 ├── app
 │   ├── css
@@ -29,10 +30,20 @@ Add the *maceio.yaml* file to the application repository. The directory hierarch
 └── .gitignore
 ```
 
+### Add the webhook
+- **Payload URL:** https://*YOUR_URL*/webhook
+- **Content type:** application/json
+- **Secret:** Secret created with the command ```ruby -rsecurerandom -e 'puts SecureRandom.hex(20)'``` 
+- **Which events would you like to trigger this webhook:** Select *Pull requests* and *Pushes*
+
+### Personal access tokens
+Follow [this](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token) guide and select the scopes *repo* and *admin:repo_hook*.
+
+
 # Configuration file
 Some examples of the *maceio.yaml* file can be found below.
 
-## Terraform
+### Terraform
 ```
 ---
 tests:
@@ -44,7 +55,7 @@ tests:
 
 We do not think you should add the apply parameter from terraform to the tests, but remember to add the flag **-auto-approve** if you decide to do it
 
-## Rspec
+### Rspec
 ```
 ---
 tests:
@@ -52,7 +63,7 @@ tests:
     cmd: "rspec spec hello_world.rb"
 ```
 
-## Pytest
+### Pytest
 ```
 ---
 tests:
@@ -60,7 +71,7 @@ tests:
     cmd: pytest
 ```
 
-## Custom
+### Custom
 
 ```
 ---
@@ -72,3 +83,34 @@ tests:
 ```
 
 The *cmd* specified in the configuration file will be executed in the root directory of the application repository.
+
+# Running it
+You can choose one of the two options below to run the application.
+
+### From Github
+The version you will find in Github may be unstable. It is not recommended for production.
+
+Clone the repository:
+```
+git clone https://github.com/leodamasceno/maceio.git
+cd maceio
+```
+
+Build the image locally:
+```
+docker build -t "bazer:0.1" .
+```
+
+Run it:
+```
+docker run --name bazer -p 8080:8080 \
+-e GIT_TOKEN="*YOUR_GIT_TOKEN*" \
+-e GIT_SECRET="*YOUR_GIT_SECRET*" bazer:0.1
+```
+### From DockerHub
+Run it:
+```
+docker run --name bazer -p 8080:8080 \
+-e GIT_TOKEN="*YOUR_GIT_TOKEN*" \
+-e GIT_SECRET="*YOUR_GIT_SECRET*" leodamasceno/maceio:latest
+```
