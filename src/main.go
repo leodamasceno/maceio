@@ -28,7 +28,7 @@ type tests struct {
     Cmd      string `yaml:"cmd"`
 }
 
-func addCommentToGithub(pr_number int, body string) {
+func addCommentToGithub(org string, repo_name string, pr_number int, body string) {
 
     var err error
 
@@ -42,8 +42,8 @@ func addCommentToGithub(pr_number int, body string) {
     client := github.NewClient(tc)
     _, _, err = client.Issues.CreateComment(
         context.Background(),
-        "leodamasceno",
-        "bazer-test",
+        org,
+        repo_name,
         pr_number,
         &github.IssueComment{Body: &msg},
     )
@@ -55,7 +55,7 @@ func addCommentToGithub(pr_number int, body string) {
 
 }
 
-func updatePRStatusCheck(token string, stat string, desc string, commit string) {
+func updatePRStatusCheck(token string, org string, repo_name string, stat string, desc string, commit string) {
 
     ctx := context.Background()
     ts := oauth2.StaticTokenSource(
@@ -71,7 +71,7 @@ func updatePRStatusCheck(token string, stat string, desc string, commit string) 
         return
     }
 
-    name := "bazer"
+    name := "maceio"
     status := stat
     description := desc
     context_git := "Maceio"
@@ -86,26 +86,26 @@ func updatePRStatusCheck(token string, stat string, desc string, commit string) 
         Creator:     &creator,
     }
 
-    createStatus, _, err := client.Repositories.CreateStatus(context.Background(), "leodamasceno", "bazer-test", commit, repoStatus)
+    createStatus, _, err := client.Repositories.CreateStatus(context.Background(), org, repo_name, commit, repoStatus)
     if err != nil {
         log.Fatal(createStatus)
     }
 
 }
 
-func runCommand(token string, name string, command string, branch string, commit_id string, pr_number int) {
+func runCommand(token string, org string, repo_name string, name string, command string, branch string, commit_id string, pr_number int) {
 
     os.Setenv("TF_CLI_ARGS", "-no-color")
     cmd := exec.Command("/bin/sh", "-c", command)
     cmd.Dir = "repos/" + strings.ReplaceAll(branch, "/", "-")
     cmd_output, err := cmd.CombinedOutput()
     if err != nil {
-        updatePRStatusCheck(token, "error", name, commit_id)
+        updatePRStatusCheck(token, org, repo_name, "error", name, commit_id)
     } else {
-        updatePRStatusCheck(token, "success", name, commit_id)
+        updatePRStatusCheck(token, org, repo_name, "success", name, commit_id)
     }
     body := string(cmd_output)
-    addCommentToGithub(pr_number, body)
+    addCommentToGithub(org, repo_name, pr_number, body)
 
 }
 
@@ -181,12 +181,14 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
         pr_number := *e.Number
         branch := *e.PullRequest.Head.Ref
         repo_url := *e.Repo.CloneURL
+        org := strings.Split(*e.Repo.FullName, "/")[0]
+        repo_name := strings.Split(*e.Repo.FullName, "/")[1]
         local_dir := "repos/" + strings.ReplaceAll(branch, "/", "-")
         commit_id := cloneGithubRepository(token, local_dir, branch, repo_url)
         config := readConfigFile(branch)
 
         for _, e := range config.Tests {
-            runCommand(token, e.Name, e.Cmd, branch, commit_id, pr_number)
+            runCommand(token, org, repo_name, e.Name, e.Cmd, branch, commit_id, pr_number)
         }
 
         // Delete local repo clone

@@ -38,9 +38,9 @@ ADD src/main.go /go/src/
 
 WORKDIR /go/src
 
-RUN go mod init bazer
+RUN go mod init maceio
 RUN go mod tidy
-RUN go build -o bazer
-RUN mv bazer ../bin/
+RUN go build -o maceio
+RUN mv maceio ../bin/
 
-CMD ["/go/bin/bazer"]
+CMD ["/go/bin/maceio"]
