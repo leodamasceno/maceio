@@ -110,19 +110,19 @@ cd maceio
 
 Build the image locally:
 ```
-docker build -t "bazer:0.1" .
+docker build -t "maceio:0.1" .
 ```
 
 Run it:
 ```
-docker run --name bazer -p 8080:8080 \
+docker run --name maceio -p 8080:8080 \
 -e GIT_TOKEN="*YOUR_GIT_TOKEN*" \
--e GIT_SECRET="*YOUR_GIT_SECRET*" bazer:0.1
+-e GIT_SECRET="*YOUR_GIT_SECRET*" maceio:0.1
 ```
 ### From DockerHub
 Run it:
 ```
-docker run --name bazer -p 8080:8080 \
+docker run --name maceio -p 8080:8080 \
 -e GIT_TOKEN="*YOUR_GIT_TOKEN*" \
 -e GIT_SECRET="*YOUR_GIT_SECRET*" leodamasceno/maceio:latest
 ```
