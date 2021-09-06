@@ -1,199 +1,55 @@
 package main
 
 import (
-    "fmt"
     "log"
-    "net/http"
     "os"
-    "os/exec"
+    "net/http"
     "strings"
     "io/ioutil"
-    "gopkg.in/yaml.v3"
     "github.com/google/go-github/github"
-    "github.com/go-git/go-git/v5"
-    . "github.com/go-git/go-git/v5/_examples"
-    "github.com/go-git/go-git/v5/plumbing"
-    git_http "github.com/go-git/go-git/v5/plumbing/transport/http"
-    "golang.org/x/net/context"
-    "golang.org/x/oauth2"
+    bitbucket "maceio/bitbucket"
+    //github_local "maceio/github"
+    "reflect"
 )
-
-type YAMLConfig struct {
-    Tests []tests `yaml:"tests"`
-
-}
-
-type tests struct {
-    Name     string `yaml:"name"`
-    Cmd      string `yaml:"cmd"`
-}
-
-func addCommentToGithub(org string, repo_name string, pr_number int, body string) {
-
-    var err error
-
-    msg := "```\n" + body
-    // Construct github HTTP client
-    token := os.Getenv("GIT_TOKEN")
-    ts := oauth2.StaticTokenSource(&oauth2.Token{
-        AccessToken: token,
-    })
-    tc := oauth2.NewClient(oauth2.NoContext, ts)
-    client := github.NewClient(tc)
-    _, _, err = client.Issues.CreateComment(
-        context.Background(),
-        org,
-        repo_name,
-        pr_number,
-        &github.IssueComment{Body: &msg},
-    )
-    if err != nil {
-        log.Fatalf("[ERROR] Failed to create comment: %s", err)
-    } else {
-
-    }
-
-}
-
-func updatePRStatusCheck(token string, org string, repo_name string, stat string, desc string, commit string) {
-
-    ctx := context.Background()
-    ts := oauth2.StaticTokenSource(
-        &oauth2.Token{AccessToken: token},
-    )
-    tc := oauth2.NewClient(ctx, ts)
-
-    client := github.NewClient(tc)
-
-    _, _, err := client.Users.Get(ctx, "")
-    if err != nil {
-        fmt.Printf("\nerror: %v\n", err)
-        return
-    }
-
-    name := "maceio"
-    status := stat
-    description := desc
-    context_git := "Maceio"
-    creator := github.User{
-        Name:  &name,
-    }
-
-    repoStatus := &github.RepoStatus{
-        State:       &status,
-        Description: &description,
-        Context:     &context_git,
-        Creator:     &creator,
-    }
-
-    createStatus, _, err := client.Repositories.CreateStatus(context.Background(), org, repo_name, commit, repoStatus)
-    if err != nil {
-        log.Fatal(createStatus)
-    }
-
-}
-
-func runCommand(token string, org string, repo_name string, name string, command string, branch string, commit_id string, pr_number int) {
-
-    os.Setenv("TF_CLI_ARGS", "-no-color")
-    cmd := exec.Command("/bin/sh", "-c", command)
-    cmd.Dir = "repos/" + strings.ReplaceAll(branch, "/", "-")
-    cmd_output, err := cmd.CombinedOutput()
-    if err != nil {
-        updatePRStatusCheck(token, org, repo_name, "error", name, commit_id)
-    } else {
-        updatePRStatusCheck(token, org, repo_name, "success", name, commit_id)
-    }
-    body := string(cmd_output)
-    addCommentToGithub(org, repo_name, pr_number, body)
-
-}
-
-func readConfigFile (branch string) YAMLConfig {
-
-    config := YAMLConfig{}
-
-    // Read config file
-    yamlFile, err := ioutil.ReadFile("repos/" + strings.ReplaceAll(branch, "/", "-") + "/maceio.yaml")
-    if err != nil {
-        log.Printf("[ERROR] Config file error: #%v ", err)
-    }
-
-    err = yaml.Unmarshal(yamlFile, &config)
-
-    if err != nil {
-        log.Printf("[ERROR] Config file error: #%v ", err)
-    }
-
-    return config
-
-}
-
-func cloneGithubRepository(token string, local_dir string, branch string, repo_url string) string {
-    // Clone the given repository to the given directory
-    Info("Cloning repository: %s. Branch: %s", repo_url, branch)
-
-    r, err := git.PlainClone(local_dir, false, &git.CloneOptions{
-        Auth: &git_http.BasicAuth{
-            Username: "git", // yes, this can be anything except an empty string
-            Password: token,
-        },
-        URL:           repo_url,
-        ReferenceName: plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", branch)),
-        //Progress:      os.Stdout,
-    })
-    CheckIfError(err)
-
-    // Retrieving the branch being pointed by HEAD
-    ref, err := r.Head()
-    CheckIfError(err)
-    // ... retrieving the commit object
-    commit, err := r.CommitObject(ref.Hash())
-    CheckIfError(err)
-    commit_id := commit.ID().String()
-
-    return commit_id
-
-}
-
 
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
 
-    // Get Github Token and Secret from env variable
-    token := os.Getenv("GIT_TOKEN")
-    secret := os.Getenv("GIT_SECRET")
 
-	payload, err := github.ValidatePayload(r, []byte(secret))
-	if err != nil {
-		log.Printf("[ERROR] Error validating request body: err=%s\n", err)
-		return
-	}
-	defer r.Body.Close()
+    if strings.Contains(r.UserAgent(), "Bitbucket") {
 
-	event, err := github.ParseWebHook(github.WebHookType(r), payload)
-	if err != nil {
-		log.Printf("[ERROR] Could not parse webhook: err=%s\n", err)
-		return
-	}
+        action := r.Header.Get("X-Event-Key")
+        signature := r.Header.Get("X-Hub-Signature")
 
-	switch e := event.(type) {
-	case *github.PullRequestEvent:
-        pr_number := *e.Number
-        branch := *e.PullRequest.Head.Ref
-        repo_url := *e.Repo.CloneURL
-        org := strings.Split(*e.Repo.FullName, "/")[0]
-        repo_name := strings.Split(*e.Repo.FullName, "/")[1]
-        local_dir := "repos/" + strings.ReplaceAll(branch, "/", "-")
-        commit_id := cloneGithubRepository(token, local_dir, branch, repo_url)
-        config := readConfigFile(branch)
-
-        for _, e := range config.Tests {
-            runCommand(token, org, repo_name, e.Name, e.Cmd, branch, commit_id, pr_number)
+        payload, err := ioutil.ReadAll(r.Body)
+        if err != nil {
+            log.Fatal("[ERROR] The payload is invalid: %v", err.Error())
         }
 
-        // Delete local repo clone
-        os.RemoveAll(local_dir)
-	}
+        err_payload := bitbucket.ValidatePayload(payload, signature)
+        if err_payload != true {
+            log.Fatal("[ERROR] The payload could not be validated: %v", err.Error())
+        }
+
+        bitbucket.EventHandler(action, payload)
+    } else if strings.Contains(r.UserAgent(), "GitHub") {
+
+        secret := os.Getenv("GIT_SECRET")
+
+        payload, err := github.ValidatePayload(r, []byte(secret))
+        if err != nil {
+            log.Printf("[ERROR] Error validating request body: err=%s\n", err)
+            return
+        }
+        defer r.Body.Close()
+
+        event, err := github.ParseWebHook(github.WebHookType(r), payload)
+        if err != nil {
+            log.Printf("[ERROR] Could not parse webhook: err=%s\n", err)
+            return
+        }
+        log.Fatal(reflect.TypeOf(event))
+        //github_local.EventHandler(event)
+    }
 }
 
 func main() {
