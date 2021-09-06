@@ -41,8 +41,12 @@ Add the *maceio.yaml* file to your repository, the structure should look like th
 - **Which events would you like to trigger this webhook:** Select *Pull requests* and *Pushes*
 
 ### Personal access tokens
+
+#### Github
 Create a user and follow [this](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token) guide and select the scopes *repo* and *admin:repo_hook*. 
 
+#### BitBucket
+Follow the steps from [this](https://confluence.atlassian.com/bitbucketserver/personal-access-tokens-939515499.html) document.
 
 # Configuration file
 Some examples of the *maceio.yaml* file can be found below.
