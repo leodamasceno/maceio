@@ -35,6 +35,8 @@ ENV PATH /go/bin:$PATH
 RUN mkdir -p ${GOPATH}/src ${GOPATH}/bin
 
 ADD src/main.go /go/src/
+ADD src/bitbucket/auth.go /go/src/bitbucket/
+ADD src/bitbucket/events.go /go/src/bitbucket/
 
 WORKDIR /go/src
 
