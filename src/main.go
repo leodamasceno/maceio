@@ -20,17 +20,20 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
         action := r.Header.Get("X-Event-Key")
         signature := r.Header.Get("X-Hub-Signature")
 
-        payload, err := ioutil.ReadAll(r.Body)
-        if err != nil {
-            log.Fatal("[ERROR] The payload is invalid: %v", err.Error())
-        }
+        if action != "diagnostics:ping" {
 
-        err_payload := bitbucket.ValidatePayload(payload, signature)
-        if err_payload != true {
-            log.Fatal("[ERROR] The payload could not be validated: %v", err.Error())
-        }
+            payload, err := ioutil.ReadAll(r.Body)
+            if err != nil {
+                log.Fatal("[ERROR] The payload is invalid: %v", err.Error())
+            }
 
-        bitbucket.EventHandler(action, payload)
+            err_payload := bitbucket.ValidatePayload(payload, signature)
+            if err_payload != true {
+                log.Fatal("[ERROR] The payload could not be validated: %v", err.Error())
+            }
+
+            bitbucket.EventHandler(action, payload)
+        }
     } else if strings.Contains(r.UserAgent(), "GitHub") {
 
         secret := os.Getenv("GIT_SECRET")
