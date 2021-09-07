@@ -10,6 +10,14 @@ RUN apk add --no-cache go
 # Install Python and pip
 RUN apk add --no-cache python3 py3-pip
 
+# Install dotnet
+RUN apk add bash icu-libs krb5-libs libgcc libintl libssl1.1 libstdc++ zlib
+RUN apk add libgdiplus --repository https://dl-3.alpinelinux.org/alpine/edge/testing/
+
+RUN wget https://download.visualstudio.microsoft.com/download/pr/08b6d245-401d-4b11-8e75-f2db47b5f166/5809c92b864453f3f666b8a9ce82f826/dotnet-sdk-5.0.400-linux-musl-x64.tar.gz -P /tmp/
+RUN tar -zxvf /tmp/dotnet-sdk-5.0.400-linux-musl-x64.tar.gz -C /tmp/
+RUN cp /tmp/dotnet /usr/local/bin/
+
 # Install Pytest
 RUN pip3 install -U pytest
 
