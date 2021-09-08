@@ -454,11 +454,10 @@ func RunCommand(branch string, command string) string {
     cmd := exec.Command("/bin/sh", "-c", command)
     cmd.Dir = "repos/" + strings.ReplaceAll(branch, "/", "-")
     cmd_output, err := cmd.CombinedOutput()
-    if err != nil {
-        return ""
-    }
-
     output := string(cmd_output)
+    if err != nil {
+        return output
+    }
 
     return output
 
@@ -607,6 +606,7 @@ func EventHandler(action string, payload []byte) {
                 }
 
                 output := string(cmd_output)
+                log.Printf(output)
                 CreateComment(output, commit_id, slug, project)
             }
         }
@@ -646,7 +646,6 @@ func EventHandler(action string, payload []byte) {
 
     }
 
-    fmt.Printf("Removing directory: %v",local_dir)
     os.RemoveAll(local_dir)
 
 }
